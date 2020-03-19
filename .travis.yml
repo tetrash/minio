@@ -55,4 +55,21 @@ before_script:
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo sh -c 'echo 0 > /proc/sys/net/ipv6/conf/all/disable_ipv6'; fi
 
 before_install:
- - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then nvm install stable ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then nvm install stable ; fi
+ 
+before_deploy:
+  - echo '{"experimental":"enabled"}' | sudo tee /etc/docker/daemon.json
+  - mkdir -p $HOME/.docker
+  - echo '{"experimental":"enabled"}' | sudo tee $HOME/.docker/config.json
+  - sudo service docker start
+  - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+  - docker buildx create --name xbuilder --use
+deploy:
+  - provider: script
+    script: bash scripts/deploy.sh
+    on:
+      branch: master
+  - provider: script
+    script: bash scripts/deploy.sh
+    on:
+      tags: true
